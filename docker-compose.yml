@@ -1,0 +1,60 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - DATABASE_USER=${DB_USER}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DATABASE_HOST=${DB_HOST}
+      - DATABASE_NAME=${DB_NAME}
+    depends_on:
+      - postgres-db
+      - mysql-db
+    networks:
+      - mynetwork  # Define the network for the 'app' service
+    volumes:
+      - app-data:/path/to/data  # Named volume for app data
+
+  postgres-db:
+    image: postgres:13  # Use the official PostgreSQL image
+    container_name: "postgres"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"  # PostgreSQL default port
+    networks:
+      - mynetwork  # Define the network for the 'postgres-db' service
+    volumes:
+      - postgres-data:/var/lib/postgresql/data  # Volume for PostgreSQL data
+
+  mysql-db:
+    image: mysql:8  # Use the official MySQL image
+    container_name: "mysql"
+    environment:
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3307:3307"  # MySQL default port
+    networks:
+      - mynetwork  # Define the network for the 'mysql-db' service
+    volumes:
+      - mysql-data:/var/lib/mysql  # Volume for MySQL data
+
+networks:
+  mynetwork:  # Define the 'mynetwork' network
+
+volumes:
+  app-data:  # Define a named volume for app data
+  postgres-data:  # Define a named volume for PostgreSQL data
+  mysql-data:     # Define a named volume for MySQL data
+
+
+
+
