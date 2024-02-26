@@ -8,7 +8,9 @@ import streamlit as st
 
 # app.py
 from typing import List, Union, Optional
-from langchain.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+# from langchain.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+
 from langchain.llms import OpenAI
 from langchain.callbacks import get_openai_callback
 from langchain.chat_models import ChatOpenAI
@@ -369,15 +371,14 @@ def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
 
                         with st.spinner("Generating chart"):
                             rationale, img_path  = ut.generate_plot(lida_data_path, message)
-                            st.session_state.messages.append({"role": "assistant", "content": rationale, "img_path": img_path})
+                            st.session_state.messages.append({"role": "assistant", "content": rationale})
                             ut.display(img_path, rationale)
                         answer = rationale
                     else:
-                        with st.spinner("Assistant is typing ..."):
-                            # st.write(st.session_state.messages)
-                            answer = llm_chain.run(st.session_state.messages)
-                            st.session_state.messages.append({"role": "assistant", "content": answer})
-                            st.write(answer)
+                        
+                        answer = llm_chain.run(st.session_state.messages)
+                        st.session_state.messages.append({"role": "assistant", "content": answer})
+                        st.write(answer)
             except Exception as e :#langchain.schema.StrOutputParser as e:
                 response = str(e)
                 if not response.startswith("Could not parse tool input: "):

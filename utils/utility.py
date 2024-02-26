@@ -74,7 +74,6 @@ def generate_plot(data_path, prompt=None,api_key=None):
     i = 0
     library = np.random.choice(["seaborn",'matplotlib'])
     try:
-        st.write(library)
         #library = "seaborn"
         plots = lida.visualize(summary=summary, goal=goals[i], textgen_config=textgen_config, library=library)
         if not plots:

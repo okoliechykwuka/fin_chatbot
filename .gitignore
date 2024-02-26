@@ -33,6 +33,7 @@ exp.ipynb
 __pycache__/
 .streamlit/secrets.toml
 .streamlit/config.toml
+ .chroma/
 
 #directories
 docs/
