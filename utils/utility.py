@@ -202,7 +202,7 @@ def create_lida_data(file_paths, file_name=None):
         # Write each DataFrame to a different sheet
         for i, file in enumerate(file_paths):
             file_buffer = io.StringIO()
-            file_buffer.write(file.getvalue().decode())
+            file_buffer.write(file.getvalue())
             # Reset the buffer position to the beginning
             file_buffer.seek(0)
             sheet = f'Sheet{i}'

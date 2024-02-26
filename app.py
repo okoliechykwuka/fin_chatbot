@@ -312,7 +312,7 @@ def get_retrieval_chain(model_name: str, temperature: float, **kwargs) -> Union[
     return retrieval_chain, llm
         
 
-def load_embeddings(model_name: str) -> Union[OpenAIEmbeddings, LlamaCppEmbeddings,HuggingFaceEmbeddings]:
+def load_embeddings(model_name: str) -> Union[OpenAIEmbeddings]:
     """
     Load embedding model.
     """
@@ -339,8 +339,9 @@ def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
             try:
                 if isinstance(llm_chain, ConversationalRetrievalChain):
                     history = st.session_state.messages.copy()
-                    history.pop()
+                    messages = []
                     for msg in st.session_state.messages:
+                        messages.append(f"{msg['role']}: {msg['content']}")
                         if msg["role"] == "assistant":
                             llm_chain.memory.chat_memory.add_ai_message(msg["content"])
                             if msg.get("img_path"):
@@ -349,7 +350,8 @@ def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
                             llm_chain.memory.chat_memory.add_user_message(msg["content"])
                         
                     #llm_chain.memory.chat_memory.add_ai_message()
-                    response = llm_chain({"question": message})
+                    chats = '\n'.join(messages)
+                    response = llm_chain({"question": chats})
                     answer =  str(response['answer'])
                 else:
                     assert chain_type is not None
