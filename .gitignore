@@ -8,7 +8,6 @@ __init__.py
 # Virtual Environment
 venv/
 env/
-.env
 .venv/
 pip-log.txt
 
@@ -38,9 +37,7 @@ __pycache__/
 #directories
 docs/
 temp/
-cache/
 images/
 
 # files
 cost_of_living_us.csv
-questions.txt

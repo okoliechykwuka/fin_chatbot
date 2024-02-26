@@ -4,6 +4,8 @@
 from agents.SQLagent import build_sql_agent
 from agents.csv_chat import build_csv_agent
 from utils import utility as ut
+import streamlit as st
+
 # app.py
 from typing import List, Union, Optional
 from langchain.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
@@ -11,14 +13,10 @@ from langchain.llms import OpenAI
 from langchain.callbacks import get_openai_callback
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.schema import (SystemMessage, HumanMessage, AIMessage)
-from langchain.llms import LlamaCpp
+from langchain.schema import AIMessage
+from langchain.vectorstores.chroma import Chroma
 from langchain.embeddings import LlamaCppEmbeddings
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import PromptTemplate
-import streamlit as st
-from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.memory import ConversationBufferMemory
@@ -27,8 +25,7 @@ import os
 import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 import io
-
-# os.environ["OPENAI_API_KEY"] = ""
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 st.session_state.csv_file_paths = []
@@ -95,7 +92,7 @@ def get_csv_file() -> Optional[str]:
     """
     import tempfile
     
-    st.header("Upload Document or Connect to a Databse")
+    st.header("Upload Document or Connect to a Database")
     
     uploaded_files = st.file_uploader(
         label="Here, upload your documents you want AskMAY to use to answer",
@@ -138,7 +135,6 @@ def get_csv_file() -> Optional[str]:
                     docs = loader.load()
                     all_docs.extend(docs)
 
-            #text = "\n\n".join([page.extract_text() for page in pdf_reader.pages])
         if all_docs:
             documents = text_splitter.split_documents(all_docs)
             all_files.append(('docs', documents))
@@ -225,6 +221,7 @@ def build_vector_store(
     Store the embedding vectors of text chunks into vector store (Qdrant).
     """
     if _docs:
+        
         with st.spinner("Loading FIle ..."):
             
             chroma = Chroma.from_documents(
@@ -232,14 +229,15 @@ def build_vector_store(
             )
     
         st.success("File Loaded Successfully!!")
+        return chroma
     else:
         chroma = None
-    return chroma
+        return chroma
 
 
 # Select model 
 
-def select_llm() -> Union[ChatOpenAI, LlamaCpp]:
+def select_llm() -> Union[ChatOpenAI]:
     """
     Read user selection of parameters in Streamlit sidebar.
     """
@@ -247,23 +245,18 @@ def select_llm() -> Union[ChatOpenAI, LlamaCpp]:
                                   ("gpt-3.5-turbo-1106",
                                    "gpt-3.5-turbo-16k-0613",
                                    "gpt-4",
-                                #    "mistral-7b-v0.1.Q5_0",
-                                #    "zephyr-7b-beta.Q5_0",
-                                #    "falcon-180b-chat.Q5_K_M",
-                                #    "dolphin-2_2-yi-34b.Q5_K_M"
-                                   ))
+                                  ))
     temperature = st.sidebar.slider("Temperature:", min_value=0.0,
                                     max_value=1.0, value=0.0, step=0.01)
     chain_mode = st.sidebar.selectbox(
                         "What would you like to query?",
                         ("Documents", "CSV|Excel", 'Database')
     )
-    #api_key  = st.sidebar.text_input('OPENAI API Key')
     
-    return model_name, temperature, chain_mode,# api_key
+    return model_name, temperature, chain_mode
 
 
-def init_agent(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenAI, LlamaCpp]:
+def init_agent(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenAI]:
     """
     Load LLM.
     """
@@ -272,35 +265,6 @@ def init_agent(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenA
     if model_name.startswith("gpt-"):
         llm =  ChatOpenAI(temperature=temperature, model_name=model_name)
     
-    elif model_name.startswith("llama-2-"):
-        callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
-        llm = LlamaCpp(
-            streaming = False,
-            model_path=f"./models/{model_name}.bin",
-            temperature=0.75,
-            input={"temperature": temperature,
-                   "max_length": 2048,
-                   "top_p": 1,
-                   'n_gpu_layers':40,
-                   'n_batch':512,
-                   },
-            n_ctx=2048,
-            callback_manager=callback_manager,
-            verbose=False,  # True
-        )
-    elif model_name.startswith("zephyr-") or model_name.startswith("mistral-") or model_name.startswith("dolphin-"):
-        callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
-        llm = LlamaCpp(
-                streaming = False,
-                model_path=f"./models/{model_name}.gguf",
-                temperature=0.75,
-                n_gpu_layers=40,
-                n_batch=512,
-                top_p=1,
-                verbose=True,
-                n_ctx=4096,
-                callback_manager=callback_manager,
-            )
     chain_mode = kwargs['chain_mode']
     if chain_mode == 'Database':
         rdbs = kwargs['rdbs']
@@ -320,25 +284,12 @@ def init_agent(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenA
     
     return llm_agent, llm
 
-def get_retrieval_chain(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenAI, LlamaCpp]:
+def get_retrieval_chain(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenAI]:
     
     docsearch = kwargs['docsearch']
     if model_name.startswith("gpt-"):
         llm =  ChatOpenAI(temperature=temperature, model_name=model_name)
 
-    elif model_name.startswith("zephyr-") or model_name.startswith("mistral-") or model_name.startswith("dolphin-"):
-        callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
-        llm = LlamaCpp(
-                streaming = False,
-                model_path=f"./models/{model_name}.gguf",
-                temperature=0.75,
-                n_gpu_layers=40,
-                n_batch=512,
-                top_p=1,
-                verbose=True,
-                n_ctx=4096,
-                callback_manager=callback_manager,
-            )
     prompt_template_doc = """
     Use the following pieces of context to answer the question at the end.
     {context}
@@ -365,13 +316,17 @@ def load_embeddings(model_name: str) -> Union[OpenAIEmbeddings, LlamaCppEmbeddin
     """
     Load embedding model.
     """
-    if model_name.startswith("gpt-"):
-        return OpenAIEmbeddings()
-    elif model_name.startswith("llama-2-"):
-        return LlamaCppEmbeddings(model_path=f"./models/{model_name}.bin")
-    elif model_name.startswith("zephyr-") or model_name.startswith("mistral-"):
-        return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    #return GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key="AIzaSyAfSMYWXQP9jenHCH0_V0vHd3-d07h8ODk")
 
+    if model_name.startswith("gpt-"):
+        embed =  OpenAIEmbeddings(model="text-embedding-3-large")
+        try:
+            assert embed is not None
+            return embed
+        except AssertionError as aerr:
+            err = str(aerr)
+            st.error(err)
+        
 
 def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
     """
@@ -423,14 +378,14 @@ def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
                             answer = llm_chain.run(st.session_state.messages)
                             st.session_state.messages.append({"role": "assistant", "content": answer})
                             st.write(answer)
-            except langchain.schema.output_parser.OutputParserException as e:
+            except Exception as e :#langchain.schema.StrOutputParser as e:
                 response = str(e)
                 if not response.startswith("Could not parse tool input: "):
                     raise e
                 answer = response.removeprefix("Could not parse LLM output: `").removesuffix("`")
         return answer, cb.total_cost
     
-    if isinstance(llm, LlamaCpp):
+    if isinstance(llm):
         response = llm_chain.run(message)
         return response, 0.0
 
@@ -495,7 +450,7 @@ def main() -> None:
 
             elif chain_mode == 'Documents':
                 try:
-                    assert chroma != None
+                    assert chroma is not None
                     llm_chain, llm = get_retrieval_chain(model_name, temperature, docsearch = chroma)
                 except AssertionError as e:
                     st.sidebar.warning('Upload at least one document')
@@ -533,21 +488,21 @@ def main() -> None:
                             st.session_state.messages.append({"role": "assistant", "content": answer})
                             st.write(answer)
                     elif chain_mode == "CSV|Excel":
-                        # with st.spinner("Assistant is typing ..."):
+                        with st.spinner("Assistant is typing ..."):
+                            try:
+                                answer, cost = get_answer(llm_chain,llm, prompt, chain_type=chain_mode)
+                                st.session_state.costs.append(cost)
+                                # st.write(answer)
+                            except ValueError:
+                                st.error("Oops!!! Internal Error trying to generate answer")
+                elif chain_mode == "CSV|Excel":
+                    with st.spinner("Assistant is typing ..."):
                         try:
                             answer, cost = get_answer(llm_chain,llm, prompt, chain_type=chain_mode)
                             st.session_state.costs.append(cost)
                             # st.write(answer)
                         except ValueError:
                             st.error("Oops!!! Internal Error trying to generate answer")
-                elif chain_mode == "CSV|Excel":
-                    # with st.spinner("Assistant is typing ..."):
-                    try:
-                        answer, cost = get_answer(llm_chain,llm, prompt, chain_type=chain_mode)
-                        st.session_state.costs.append(cost)
-                        # st.write(answer)
-                    except ValueError:
-                        st.error("Oops!!! Internal Error trying to generate answer")
                         
                 elif chain_mode == "Database":
                     with st.spinner("Assistant is typing ..."):
