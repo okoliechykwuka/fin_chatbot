@@ -373,12 +373,12 @@ def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
 
                         with st.spinner("Generating chart"):
                             rationale, img_path  = ut.generate_plot(lida_data_path, message)
-                            st.session_state.messages.append({"role": "assistant", "content": rationale})
+                            st.session_state.messages.append({"role": "assistant", "content": rationale, "img_path": img_path})
                             ut.display(img_path, rationale)
                         answer = rationale
                     else:
                         
-                        answer = llm_chain.run(st.session_state.messages)
+                        answer = llm_chain.run(message)
                         st.session_state.messages.append({"role": "assistant", "content": answer})
                         st.write(answer)
             except Exception as e :#langchain.schema.StrOutputParser as e:

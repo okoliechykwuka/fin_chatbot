@@ -77,13 +77,13 @@ def generate_plot(data_path, prompt=None,api_key=None):
         #library = "seaborn"
         plots = lida.visualize(summary=summary, goal=goals[i], textgen_config=textgen_config, library=library)
         if not plots:
-            st.write("Using Matplotlib")
+            # st.write("Using Matplotlib")
             library = "matplotlib"
             plots = lida.visualize(summary=summary, goal=goals[i], textgen_config=textgen_config, library=library)
 
 
     except Exception as e:
-        st.write("Using Matplotlib")
+        # st.write("Using Matplotlib")
         library = "matplotlib"
         plots = lida.visualize(summary=summary, goal=goals[i], textgen_config=textgen_config, library=library)
     if len(plots) == 0:
@@ -201,7 +201,7 @@ def create_lida_data(file_paths, file_name=None):
         # Write each DataFrame to a different sheet
         for i, file in enumerate(file_paths):
             file_buffer = io.StringIO()
-            file_buffer.write(file.getvalue())
+            file_buffer.write(file.getvalue().decode())
             # Reset the buffer position to the beginning
             file_buffer.seek(0)
             sheet = f'Sheet{i}'
@@ -214,4 +214,3 @@ def create_lida_data(file_paths, file_name=None):
     #print(type(lida_buffer))
     excel = pd.read_excel(lida_buffer)
     return excel #lida_buffer.getvalue()
-            
