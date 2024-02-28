@@ -346,8 +346,6 @@ def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
                         messages.append(f"{msg['role']}: {msg['content']}")
                         if msg["role"] == "assistant":
                             llm_chain.memory.chat_memory.add_ai_message(msg["content"])
-                            if msg.get("img_path"):
-                                llm_chain.memory.chat_memory.add_ai_message(msg["img_path"])
                         else:
                             llm_chain.memory.chat_memory.add_user_message(msg["content"])
                         
