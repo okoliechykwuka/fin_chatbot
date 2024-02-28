@@ -51,7 +51,7 @@ Answer:"""
 
 def open_ai_key():
     with st.sidebar:
-        openai_api_key = st.text_input("OpenAI API Key or Google Gemini", key="chatbot_api_key", type="password")
+        openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
         "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
         if not openai_api_key:
             st.info("Please add your OpenAI API key to continue.")
