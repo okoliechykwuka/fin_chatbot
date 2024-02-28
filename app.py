@@ -377,10 +377,10 @@ def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
                             ut.display(img_path, rationale)
                         answer = rationale
                     else:
-                        
-                        answer = llm_chain.run(message)
-                        st.session_state.messages.append({"role": "assistant", "content": answer})
-                        st.write(answer)
+                        with st.spinner("Assistant id typing"):
+                            answer = llm_chain.run(message)
+                            st.session_state.messages.append({"role": "assistant", "content": answer})
+                            st.write(answer)
             except Exception as e :#langchain.schema.StrOutputParser as e:
                 response = str(e)
                 if not response.startswith("Could not parse tool input: "):
@@ -491,7 +491,6 @@ def main() -> None:
                             st.session_state.messages.append({"role": "assistant", "content": answer})
                             st.write(answer)
                     elif chain_mode == "CSV|Excel":
-                        with st.spinner("Assistant is typing ..."):
                             try:
                                 answer, cost = get_answer(llm_chain,llm, prompt, chain_type=chain_mode)
                                 st.session_state.costs.append(cost)
