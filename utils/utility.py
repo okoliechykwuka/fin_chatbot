@@ -37,6 +37,16 @@ class ExcelLoader():
 
             docs.append(temp_buffer)
         return docs
+    
+def load_csv(file):
+
+    temp_buffer = io.StringIO()
+    df = pd.read_csv(file)
+    # Write DataFrame to the buffer instead of writing to disk
+    df.to_csv(temp_buffer, index=False)
+    temp_buffer.seek(0)
+
+    return temp_buffer
 
 
 

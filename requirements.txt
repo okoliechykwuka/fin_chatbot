@@ -26,5 +26,6 @@ seaborn==0.13.0
 pysqlite-binary==0.5.1.3380300
 langchain-google-genai==0.0.9
 xlsxwriter==3.2.0
+embedchain
 
 
