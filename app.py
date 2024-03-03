@@ -27,14 +27,20 @@ if not st.session_state.get('rag'):
 
 st.session_state.config_dict={
             "llm": {
-                "provider": "openai",
+                "provider": "",
                 "config": {
-                    "model": "gpt-3.5-turbo-1106",
-                    "temperature": 0,
+                    "model": "",
+                    "temperature": 0.0,
                     "top_p": 1,
                     "stream": True,
                 }
-            }
+            },
+            "embedder": {
+        "provider": "huggingface",
+        "config": {
+            "model": "BAAI/bge-small-en-v1.5"
+        }
+    }
 }
 def open_ai_key():
     with st.sidebar:
@@ -212,10 +218,11 @@ def select_llm() -> Union[ChatOpenAI]:
     return model_name, temperature, chain_mode
 
 def get_llm(model_name, temperature):
+    st.write(model_name)
     if model_name.startswith("gpt-"):
         llm =  ChatOpenAI(temperature=temperature, model_name=model_name)
         return llm, "openai"
-    elif model_name.startswith('llama'):
+    elif model_name.startswith('llama2'):
         llm = Ollama(model="llama2", temperature=temperature)
         return llm, "ollama"
     elif model_name.startswith('mistral'):
@@ -224,29 +231,36 @@ def get_llm(model_name, temperature):
     else: 
         return ChatOpenAI(), "openai"
    
-@st.cache_resource
-def build_rag_app(pdf_paths: list, model_name=None, provider=None, temperature=0) :
-    
+@st.cache_data
+def build_rag_app(pdf_paths: list, model_name="gpt-3.5-turbo", provider="openai", temperature=0):
+    import embedchain as em
+    _, provider = get_llm(model_name, temperature)
+    st.write(provider)
     st.session_state.config_dict['llm']['provider'] = provider
     st.session_state.config_dict['llm']['config']['model']=model_name
     st.session_state.config_dict['llm']['config']['temperature'] = temperature
-    app = App.from_config('config.yaml')
+    if provider == "openai":
+        del st.session_state.config_dict['embedder']
+
+    st.write(st.session_state.config_dict)
+    print("GOT HERE")
+    app = em.App.from_config(config=st.session_state.config_dict)
+    #app = em.App.from_config('config_o.yaml')
+    print("GOT HERE")
     for pdf in pdf_paths:
         app.add(pdf, data_type="pdf_file")
          #,       data_type ='docx_file') 
-          #      , data_type='text_file')
+         #      , data_type='text_file')
     st.session_state.rag = app
-    return app
+    return True
 
 def init_agent(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenAI]:
     """
     Load LLM.
     """
-    llm_agent = None  # Initialize llm_agent with a default value
+    llm_agent = None 
     
     llm, _ = get_llm(model_name, temperature)
-    #if model_name.startswith("gpt-"):
-    #    llm =  ChatOpenAI(temperature=temperature, model_name=model_name)
     
     chain_mode = kwargs['chain_mode']
     if chain_mode == 'Database':
@@ -284,6 +298,8 @@ def get_answer(llm_chain, message, llm=None, chain_type=None) -> tuple[str, floa
                 isplot = ut.classify_prompt(message)
                 print(isplot,'--------------------------------------')
                 if isplot:
+                    if not isinstance(llm, (ChatOpenAI, OpenAI)):
+                        open_ai_key()
                     if chain_type == "Database":
                         from utils.prompts import plot_prompt
                         sql_plot_prompt = plot_prompt.format(message)
@@ -362,7 +378,10 @@ def main() -> None:
             llm_chain, llm = None, None
             try:
                 assert st.session_state.all_doc_path != []
-                llm_chain = build_rag_app(st.session_state.all_doc_path)
+                _ = build_rag_app(st.session_state.all_doc_path, 
+                                          model_name=model_name,
+                                          temperature=temperature)
+                llm_chain = st.session_state.rag
             except AssertionError as e:
                 st.sidebar.warning('Upload at least one document')
                 llm_chain, llm = None, None
@@ -381,11 +400,12 @@ def main() -> None:
                 assert type(llm_chain) != type(None)
             
                 if chain_mode == 'Documents':
-                    with st.chat_message("assistant"):
+                    with st.spinner("Assistant is typing"):
                         try:
+                            
                             answer, cost = get_answer(llm_chain, prompt, llm=llm)
                             st.session_state.messages.append({"role": "assistant", "content": answer})
-                            st.write(answer)
+                            st.chat_message('assistant').write(answer)
                         except ValueError:
                             st.error("Oops!!! Internal Error trying to generate answer")
                 
