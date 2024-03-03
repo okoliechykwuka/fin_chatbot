@@ -90,10 +90,12 @@ def get_csv_file() -> Optional[str]:
                 st.warning("Data type not supported")
             elif file.type == "application/pdf":
                 type = 'pdf_file'
-                #Loader = PyPDFLoader
+                Loader = PyPDFLoader
+
             elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
                 type = 'word_file'
                 st.warning("Data Type Note supported")
+                Loader = PyPDFLoader
                 #st.session_state.all_doc_path.append(temp_file.name)
 
             elif file.type == "text/csv":
@@ -222,7 +224,7 @@ def get_llm(model_name, temperature):
     else: 
         return ChatOpenAI(), "openai"
    
-@st.cache
+@st.cache_resource
 def build_rag_app(pdf_paths: list, model_name=None, provider=None, temperature=0) :
     
     st.session_state.config_dict['llm']['provider'] = provider
@@ -333,8 +335,7 @@ def main() -> None:
             try:
                 print(os.environ['DB_ACTIVE'])
                 if os.environ['DB_ACTIVE'] == "true":
-                    llm_chain, llm = st.session_state['models']
-                    
+                    llm_chain, llm = st.session_state['models']   
                 else:
                     llm_chain, llm = get_db_credentials(model_name=model_name, temperature=temperature,
                                                     chain_mode=chain_mode)
