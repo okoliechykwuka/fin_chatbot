@@ -231,7 +231,7 @@ def get_llm(model_name, temperature):
     else: 
         return ChatOpenAI(), "openai"
    
-@st.cache_data
+@st.cache_resource
 def build_rag_app(pdf_paths: list, model_name="gpt-3.5-turbo", provider="openai", temperature=0):
     import embedchain as em
     _, provider = get_llm(model_name, temperature)
@@ -252,7 +252,7 @@ def build_rag_app(pdf_paths: list, model_name="gpt-3.5-turbo", provider="openai"
          #,       data_type ='docx_file') 
          #      , data_type='text_file')
     st.session_state.rag = app
-    return True
+    return app
 
 def init_agent(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenAI]:
     """
@@ -316,8 +316,8 @@ def get_answer(llm_chain, message, llm=None, chain_type=None) -> tuple[str, floa
                         ut.display(img_path, rationale)
                     answer = rationale
                 else:
-                    
-                    answer = llm_chain.run(st.session_state.messages)
+                    base = "You a expert data analyst. You are expected to give determine the information requested by the user and give conclusive answer. Your response should never be a code snippet\n\n"
+                    answer = llm_chain.run(base+message)
                     st.session_state.messages.append({"role": "assistant", "content": answer})
                     st.write(answer)
         except Exception as e :#langchain.schema.StrOutputParser as e:
@@ -378,9 +378,10 @@ def main() -> None:
             llm_chain, llm = None, None
             try:
                 assert st.session_state.all_doc_path != []
-                _ = build_rag_app(st.session_state.all_doc_path, 
-                                          model_name=model_name,
-                                          temperature=temperature)
+                if not st.session_state.rag:
+                    _ = build_rag_app(st.session_state.all_doc_path, 
+                                            model_name=model_name,
+                                            temperature=temperature)
                 llm_chain = st.session_state.rag
             except AssertionError as e:
                 st.sidebar.warning('Upload at least one document')
