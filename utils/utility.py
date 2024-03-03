@@ -82,9 +82,11 @@ def generate_plot(data_path, prompt=None,api_key=None):
         goals = lida.goals(summary, n=1, persona=persona, textgen_config=textgen_config)
         
     i = 0
-    library = np.random.choice(["seaborn",'matplotlib'])
+
+    library = np.random.choice(["seaborn", 'plotly',])
+
     try:
-        #library = "seaborn"
+        #library = "plotly"
         plots = lida.visualize(summary=summary, goal=goals[i], textgen_config=textgen_config, library=library)
         if not plots:
             st.write("Using Matplotlib")

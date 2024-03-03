@@ -315,15 +315,17 @@ def main() -> None:
     init_page()
     dbActive()
     try:
-        open_ai_key()
-        _ = load_dotenv(find_dotenv())
         if 'history' not in st.session_state:
             st.session_state['history'] = []
 
-        openai.api_key  = os.getenv("OPENAI_API_KEY")
-        model_name, temperature, chain_mode = select_llm()
         
-        files = get_csv_file()
+        model_name, temperature, chain_mode = select_llm()
+        if model_name.startswith("gpt-"):
+            open_ai_key()
+            _ = load_dotenv(find_dotenv())
+            openai.api_key  = os.getenv("OPENAI_API_KEY")
+        
+        _ = get_csv_file()
         paths = None
 
         if chain_mode == 'Database':
