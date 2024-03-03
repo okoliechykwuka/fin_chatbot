@@ -242,8 +242,6 @@ def build_rag_app(pdf_paths: list, model_name="gpt-3.5-turbo", provider="openai"
     if provider == "openai":
         del st.session_state.config_dict['embedder']
 
-    st.write(st.session_state.config_dict)
-    print("GOT HERE")
     app = em.App.from_config(config=st.session_state.config_dict)
     #app = em.App.from_config('config_o.yaml')
     print("GOT HERE")
