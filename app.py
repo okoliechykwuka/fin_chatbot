@@ -6,7 +6,9 @@ from agents.csv_chat import build_csv_agent
 from utils import utility as ut
 import streamlit as st
 from embedchain import App
-
+from embedchain.loaders.docx_file import DocxFileLoader
+from embedchain.loaders.text_file import TextFileLoader
+from embedchain.loaders.pdf_file import PdfFileLoader
 from typing import List, Union, Optional
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 from langchain.llms import OpenAI
@@ -83,7 +85,7 @@ def get_csv_file() -> Optional[str]:
     
     uploaded_files = st.file_uploader(
         label="Here, upload your documents you want AskMAY to use to answer",
-        type= ["csv", 'xlsx', 'pdf'],
+        type= ["csv", 'xlsx', 'pdf', 'docx', 'txt'],
         accept_multiple_files= True
     )
 
@@ -92,18 +94,19 @@ def get_csv_file() -> Optional[str]:
             
             Loader = None
             if file.type == "text/plain":
-                #Loader = TextLoader
+                data_type = 'text_file'
+                Loader = TextFileLoader()
                 st.warning("Data type not supported")
+
             elif file.type == "application/pdf":
-                type = 'pdf_file'
-                Loader = PyPDFLoader
+                data_type = 'pdf_file'
+                Loader = PdfFileLoader()
 
             elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                type = 'word_file'
+                data_type = 'docx_file'
                 st.warning("Data Type Note supported")
-                Loader = PyPDFLoader
-                #st.session_state.all_doc_path.append(temp_file.name)
-
+                Loader = DocxFileLoader()
+                
             elif file.type == "text/csv":
                 import pandas as pd
                 csv_file_buffer = ut.load_csv(file)
@@ -120,11 +123,11 @@ def get_csv_file() -> Optional[str]:
 
             if Loader:
                 file_buffer = io.BytesIO(file.getvalue())
-                #with open('temp.docx', 'wb') as 
+                
                 with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                     temp_file.write(file_buffer.getvalue())
-                    loader = Loader(temp_file.name)
-                    st.session_state.all_doc_path.append(temp_file.name)
+                    
+                    st.session_state.all_doc_path.append((temp_file.name, data_type, Loader))
     
 def get_db_credentials(model_name, temperature, chain_mode='Database'):
     """
@@ -187,7 +190,6 @@ def get_db_credentials(model_name, temperature, chain_mode='Database'):
         if db_active == "true":
             #return st.session_state['models']
             mds =  st.session_state['models']
-            st.write("Reached")
             return mds
         else:
             st.stop()
@@ -232,10 +234,10 @@ def get_llm(model_name, temperature):
         return ChatOpenAI(), "openai"
    
 @st.cache_resource
-def build_rag_app(pdf_paths: list, model_name="gpt-3.5-turbo", provider="openai", temperature=0):
+def build_rag_app(paths: list, model_name="gpt-3.5-turbo", provider="openai", temperature=0):
     import embedchain as em
     _, provider = get_llm(model_name, temperature)
-    st.write(provider)
+    
     st.session_state.config_dict['llm']['provider'] = provider
     st.session_state.config_dict['llm']['config']['model']=model_name
     st.session_state.config_dict['llm']['config']['temperature'] = temperature
@@ -243,14 +245,12 @@ def build_rag_app(pdf_paths: list, model_name="gpt-3.5-turbo", provider="openai"
         del st.session_state.config_dict['embedder']
 
     app = em.App.from_config(config=st.session_state.config_dict)
-    #app = em.App.from_config('config_o.yaml')
-    print("GOT HERE")
-    for pdf in pdf_paths:
-        app.add(pdf, data_type="pdf_file")
-         #,       data_type ='docx_file') 
-         #      , data_type='text_file')
+
+    for path, data_type, Loader, in paths:
+        app.add(path, data_type=data_type, loader=Loader)
+
     st.session_state.rag = app
-    return app
+    return True
 
 def init_agent(model_name: str, temperature: float, **kwargs) -> Union[ChatOpenAI]:
     """
@@ -376,10 +376,10 @@ def main() -> None:
             llm_chain, llm = None, None
             try:
                 assert st.session_state.all_doc_path != []
-                if not st.session_state.rag:
-                    _ = build_rag_app(st.session_state.all_doc_path, 
-                                            model_name=model_name,
-                                            temperature=temperature)
+                #if not st.session_state.rag:
+                _ = build_rag_app(st.session_state.all_doc_path, 
+                                        model_name=model_name,
+                                        temperature=temperature)
                 llm_chain = st.session_state.rag
             except AssertionError as e:
                 st.sidebar.warning('Upload at least one document')
