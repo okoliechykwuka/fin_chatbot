@@ -10,16 +10,14 @@ from embedchain.loaders.docx_file import DocxFileLoader
 from embedchain.loaders.text_file import TextFileLoader
 from embedchain.loaders.pdf_file import PdfFileLoader
 from typing import List, Union, Optional
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
-from langchain.llms import OpenAI
-from langchain.callbacks import get_openai_callback
-from langchain.chat_models import ChatOpenAI
+from langchain_community.llms import OpenAI
+from langchain_community.callbacks import get_openai_callback
+from langchain_community.chat_models import ChatOpenAI
 from langchain.schema import AIMessage
 import os
 from dotenv import load_dotenv, find_dotenv
 import io
 from langchain_community.llms import Ollama
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 st.session_state.csv_file_paths = []
@@ -32,7 +30,7 @@ st.session_state.config_dict={
                 "provider": "",
                 "config": {
                     "model": "",
-                    "temperature": 0.0,
+                    "temperature": 0.5,
                     "top_p": 1,
                     "stream": True,
                 }
@@ -220,7 +218,6 @@ def select_llm() -> Union[ChatOpenAI]:
     return model_name, temperature, chain_mode
 
 def get_llm(model_name, temperature):
-    st.write(model_name)
     if model_name.startswith("gpt-"):
         llm =  ChatOpenAI(temperature=temperature, model_name=model_name)
         return llm, "openai"
@@ -234,19 +231,22 @@ def get_llm(model_name, temperature):
         return ChatOpenAI(), "openai"
    
 @st.cache_resource
-def build_rag_app(paths: list, model_name="gpt-3.5-turbo", provider="openai", temperature=0):
+def build_rag_app(_paths: list, model_name="gpt-3.5-turbo", provider="openai", temperature=0):
     import embedchain as em
     _, provider = get_llm(model_name, temperature)
     
     st.session_state.config_dict['llm']['provider'] = provider
     st.session_state.config_dict['llm']['config']['model']=model_name
     st.session_state.config_dict['llm']['config']['temperature'] = temperature
-    if provider == "openai":
-        del st.session_state.config_dict['embedder']
-
+    # if provider == "openai":
+    #     del st.session_state.config_dict['embedder']
+    if provider == "ollama":
+        st.session_state.config_dict['llm']['config'].setdefault('base_url', 'http://localhost:11434')
+        
+    st.write(st.session_state.config_dict)
     app = em.App.from_config(config=st.session_state.config_dict)
 
-    for path, data_type, Loader, in paths:
+    for path, data_type, Loader, in _paths:
         app.add(path, data_type=data_type, loader=Loader)
 
     st.session_state.rag = app
@@ -405,7 +405,8 @@ def main() -> None:
                             answer, cost = get_answer(llm_chain, prompt, llm=llm)
                             st.session_state.messages.append({"role": "assistant", "content": answer})
                             st.chat_message('assistant').write(answer)
-                        except ValueError:
+                        except ValueError as e:
+                            st.write(e)
                             st.error("Oops!!! Internal Error trying to generate answer")
                 
                 elif chain_mode == "CSV|Excel":
@@ -414,7 +415,8 @@ def main() -> None:
                             answer, cost = get_answer(llm_chain, prompt,llm, chain_type=chain_mode)
                             st.session_state.costs.append(cost)
                             # st.write(answer)
-                        except ValueError:
+                        except ValueError as e:
+                            st.write(e)
                             st.error("Oops!!! Internal Error trying to generate answer")
                 
                         
@@ -424,7 +426,8 @@ def main() -> None:
                             answer, cost = get_answer(llm_chain, prompt,llm, chain_type=chain_mode)
                             st.write(answer)
                             st.session_state.costs.append(cost)
-                        except ValueError:
+                        except ValueError as e:
+                            st.write(e)
                             st.error("Oops!!! Internal Error trying to generate answer")
 
             except AssertionError:

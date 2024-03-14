@@ -1,0 +1,27 @@
+llm:
+  provider: ollama
+  config:
+    model: 'mistral:latest'
+    temperature: 0.5
+    top_p: 1
+    stream: false
+embedder:
+  provider: huggingface
+  config:
+    model: 'BAAI/bge-base-en-v1.5'
+# vectordb:
+#   provider: pinecone
+#   config:
+#     metric: cosine
+#     vector_dimension: 1536
+#     index_name: my-pinecone-index
+#     pod_config:
+#       environment: gcp-starter
+#       metadata_config:
+#         indexed:
+#           - "url"
+#           - "hash"
+
+    
+
+

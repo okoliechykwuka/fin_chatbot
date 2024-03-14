@@ -1,31 +1,29 @@
-langchain==0.1.9
 openai==1.12.0
 python-dotenv==1.0.0
+langchain==0.1.12
 streamlit==1.28.0
-tiktoken==0.4.0
 qdrant-client==1.7.1
 pandas==2.0.3
 matplotlib==3.7.2
-chromadb==0.3.29
-numpy==1.25.1
+chromadb==0.4.24
 pydantic==1.10.11
-SQLAlchemy==2.0.20
 openpyxl==3.1.2
 pypdf==3.15.5
 tabulate==0.9.0
 docx2txt==0.8
 llama-cpp-python==0.2.20
 pymysql==1.1.0
-psycopg2-binary==2.9.1
+# psycopg2-binary==2.9.1
 cryptography==42.0.5
 lida==0.0.14
-llmx==0.0.21a0
 langchain_experimental==0.0.51
 langchainhub==0.1.14
 seaborn==0.13.0
-pysqlite-binary==0.5.1.3380300
 langchain-google-genai==0.0.9
 xlsxwriter==3.2.0
-embedchain
+embedchain==0.1.94
+langchain-community==0.0.28
+langchain-openai==0.0.5
+sentence-transformers==2.3.1
 
 

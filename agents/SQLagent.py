@@ -1,8 +1,8 @@
 import os
 
-from langchain.agents import create_sql_agent, AgentType
-from langchain.agents.agent_toolkits import SQLDatabaseToolkit 
-from langchain.sql_database import SQLDatabase 
+from langchain_community.agent_toolkits import create_sql_agent
+from langchain_community.agent_toolkits import SQLDatabaseToolkit
+from langchain_community.utilities.sql_database import SQLDatabase
 import sys
 import os
 
@@ -75,7 +75,7 @@ def build_sql_agent(llm,rdbs, **kwargs):
         toolkit=toolkit,
         verbose=True,
         handle_parsing_errors=True,
-        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        agent_type="openai-tools",
     )
 
     return sql_agent

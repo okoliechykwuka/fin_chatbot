@@ -1,5 +1,5 @@
 import streamlit as st
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 import os
 from langchain.prompts.prompt import PromptTemplate
 import openai
@@ -67,8 +67,7 @@ def generate_plot(data_path, prompt=None,api_key=None):
     lida = Manager(text_gen = llm(provider="openai", api_key=api_key)) 
     textgen_config = TextGenerationConfig(n=1, temperature=0.5,
                                           model="gpt-3.5-turbo-0125", use_cache=False)
-                        #"gpt-3.5-turbo-16k-0613"
-                         #model="gpt-3.5-turbo-0125", use_cache=False)
+
     
     summary = lida.summarize(data_path, summary_method="default", textgen_config=textgen_config)  
     
