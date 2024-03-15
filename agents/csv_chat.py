@@ -28,7 +28,7 @@ def build_csv_agent(llm, file_path):
         file_path,
         verbose=True,
         handle_parsing_errors=True,
-        agent_type=AgentType.OPENAI_FUNCTIONS,
+        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
     )
     return csv_agent
 

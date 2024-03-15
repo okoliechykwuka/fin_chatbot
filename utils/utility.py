@@ -2,6 +2,7 @@ import streamlit as st
 from langchain_community.chat_models import ChatOpenAI
 import os
 from langchain.prompts.prompt import PromptTemplate
+
 import openai
 import base64
 from lida import Manager, TextGenerationConfig , llm  
@@ -108,7 +109,7 @@ def generate_plot(data_path, prompt=None,api_key=None):
     return caption, fig
 
 
-def classify_prompt(input, api_key=None):
+def classify_prompt(input, model,api_key=None):
     """
     This function classifies a user input to determine if it is requesting a plot.
     It returns True if the input is requesting a plot, and False otherwise.
@@ -124,7 +125,7 @@ def classify_prompt(input, api_key=None):
     User Input: "{}"
     """
 
-    model = ChatOpenAI(model_name="gpt-3.5-turbo-16k-0613")
+    #model = ChatOpenAI(model_name="gpt-3.5-turbo-16k-0613")
     res = model.predict(prompt.format(input))
 
     # Checking for the specific responses

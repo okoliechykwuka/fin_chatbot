@@ -220,14 +220,18 @@ def select_llm() -> Union[ChatOpenAI]:
 def get_llm(model_name, temperature):
     if model_name.startswith("gpt-"):
         llm =  ChatOpenAI(temperature=temperature, model_name=model_name)
+        st.session_state.llm = llm
         return llm, "openai"
     elif model_name.startswith('llama2'):
         llm = Ollama(model="llama2", temperature=temperature)
+        st.session_state.llm = llm
         return llm, "ollama"
     elif model_name.startswith('mistral'):
         llm = Ollama(model=model_name,temperature=temperature)
+        st.session_state.llm = llm
         return llm, "ollama"
     else: 
+        st.session_state.llm = ChatOpenAI()
         return ChatOpenAI(), "openai"
    
 @st.cache_resource
@@ -293,7 +297,7 @@ def get_answer(llm_chain, message, llm=None, chain_type=None) -> tuple[str, floa
             else:
                 assert chain_type is not None
                 print(message)
-                isplot = ut.classify_prompt(message)
+                isplot = ut.classify_prompt(message, llm)
                 print(isplot,'--------------------------------------')
                 if isplot:
                     if not isinstance(llm, (ChatOpenAI, OpenAI)):
