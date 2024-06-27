@@ -52,6 +52,7 @@ Answer:"""
 def open_ai_key():
     with st.sidebar:
         openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
+        st.session_state["openai-key"] = openai_api_key
         "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
         if not openai_api_key:
             st.info("Please add your OpenAI API key to continue.")
@@ -393,11 +394,12 @@ def get_answer(llm_chain,llm, message, chain_type=None) -> tuple[str, float]:
 
 def main() -> None:
     import openai
+    openai.api_key = st.session_state.get("openai-key")
     init_page()
     dbActive()
     try:
-        open_ai_key()
         _ = load_dotenv(find_dotenv())
+        open_ai_key()
         if 'history' not in st.session_state:
             st.session_state['history'] = []
 
